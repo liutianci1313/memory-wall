@@ -29,6 +29,8 @@ database.exec(`CREATE TABLE IF NOT EXISTS photos (
 try { database.exec("ALTER TABLE photos ADD COLUMN note TEXT NOT NULL DEFAULT ''"); } catch (_error) { /* Existing database already has the column. */ }
 try { database.exec("ALTER TABLE photos ADD COLUMN story TEXT NOT NULL DEFAULT ''"); } catch (_error) { /* Existing database already has the column. */ }
 try { database.exec("ALTER TABLE photos ADD COLUMN taken_at TEXT NOT NULL DEFAULT ''"); } catch (_error) { /* Existing database already has the column. */ }
+const photoColumns = database.prepare('PRAGMA table_info(photos)').all().map(column => column.name);
+const hasTakenAtColumn = photoColumns.includes('taken_at');
 database.exec(`CREATE TABLE IF NOT EXISTS music (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -75,7 +77,10 @@ app.use('/uploads', express.static(uploadDirectory));
 app.use(express.static(root));
 
 app.get('/api/photos', (_request, response) => {
-  const photos = database.prepare('SELECT id, original_name, category, note, story, taken_at, mime_type, created_at, stored_name FROM photos ORDER BY CASE WHEN TRIM(COALESCE(taken_at, "")) != "" THEN taken_at ELSE created_at END DESC').all();
+  const select = hasTakenAtColumn
+    ? 'SELECT id, original_name, category, note, story, taken_at, mime_type, created_at, stored_name FROM photos ORDER BY CASE WHEN TRIM(COALESCE(taken_at, \'\')) != \'\' THEN taken_at ELSE created_at END DESC'
+    : 'SELECT id, original_name, category, note, story, mime_type, created_at, stored_name FROM photos ORDER BY created_at DESC';
+  const photos = database.prepare(select).all();
   response.json(photos.map(photo => ({ ...photo, taken_at: normalizeTakenAt(photo.taken_at), url: `/uploads/${photo.stored_name}` })));
 });
 
@@ -97,8 +102,15 @@ app.post('/api/photos', requireAdmin, upload.array('photos', 20), (request, resp
   const note = String(request.body.note || '').trim().slice(0, 500);
   const story = String(request.body.story || '').trim().slice(0, 5000);
   const takenAt = normalizeTakenAt(request.body.taken_at);
-  const insert = database.prepare('INSERT INTO photos (original_name, stored_name, category, note, story, taken_at, mime_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  try { response.status(201).json({ ids: (request.files || []).map(file => insert.run(file.originalname, file.filename, category, note, story, takenAt, file.mimetype, new Date().toISOString()).lastInsertRowid) }); }
+  const insert = hasTakenAtColumn
+    ? database.prepare('INSERT INTO photos (original_name, stored_name, category, note, story, taken_at, mime_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    : database.prepare('INSERT INTO photos (original_name, stored_name, category, note, story, mime_type, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  try {
+    const ids = (request.files || []).map(file => hasTakenAtColumn
+      ? insert.run(file.originalname, file.filename, category, note, story, takenAt, file.mimetype, new Date().toISOString()).lastInsertRowid
+      : insert.run(file.originalname, file.filename, category, note, story, file.mimetype, new Date().toISOString()).lastInsertRowid);
+    response.status(201).json({ ids });
+  }
   catch (error) { (request.files || []).forEach(file => fs.rmSync(file.path, { force: true })); response.status(500).json({ error: '保存照片失败' }); }
 });
 
@@ -107,7 +119,9 @@ app.patch('/api/photos/:id', requireAdmin, (request, response) => {
   const story = String(request.body.story || '').trim().slice(0, 5000);
   const takenAt = normalizeTakenAt(request.body.taken_at);
   const category = ['旅行', '日常', '灵感'].includes(request.body.category) ? request.body.category : '日常';
-  const result = database.prepare('UPDATE photos SET note = ?, story = ?, taken_at = ?, category = ? WHERE id = ?').run(note, story, takenAt, category, request.params.id);
+  const result = hasTakenAtColumn
+    ? database.prepare('UPDATE photos SET note = ?, story = ?, taken_at = ?, category = ? WHERE id = ?').run(note, story, takenAt, category, request.params.id)
+    : database.prepare('UPDATE photos SET note = ?, story = ?, category = ? WHERE id = ?').run(note, story, category, request.params.id);
   response.sendStatus(result.changes ? 204 : 404);
 });
 
