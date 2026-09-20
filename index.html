@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>回忆墙</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+		:root { --ink: #202421; --muted: #7b827d; --line: #dedfd8; --paper: #f5f4ef; --card: #fffefa; --lime: #d4f35b; --orange: #ff7c55; --blue: #7295ff; --shadow: 0 22px 50px rgba(40, 45, 35, .08); }
+		* { box-sizing: border-box; }
+		body { margin: 0; color: var(--ink); background: var(--paper); font-family: Manrope, "Microsoft YaHei", sans-serif; overflow-x: hidden; }
+		button, input, select { font: inherit; }
+		button { cursor: pointer; }
+		.shell { width: min(1420px, calc(100% - 48px)); margin: 0 auto; }
+		header { display: flex; justify-content: space-between; align-items: center; padding: 27px 0 24px; border-bottom: 1px solid var(--line); }
+		.brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.04em; font-size: 20px; }
+		.brand-mark { width: 34px; height: 34px; background: var(--lime); border: 2px solid var(--ink); border-radius: 50% 50% 50% 8px; display: grid; place-items: center; transform: rotate(-10deg); }
+		.brand-mark span { transform: rotate(10deg); font-size: 17px; }
+		.header-note { color: var(--muted); font-size: 12px; font-family: "DM Mono", monospace; }
+		.hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; padding: 78px 0 48px; align-items: end; }
+		h1 { font-size: clamp(50px, 7vw, 104px); letter-spacing: -.085em; line-height: .9; margin: 0; max-width: 760px; }
+		.hero-copy { max-width: 380px; margin-left: auto; color: #606961; line-height: 1.7; font-size: 14px; }
+		.hero-copy strong { color: var(--ink); display: block; margin-bottom: 12px; font-size: 18px; letter-spacing: -.03em; }
+		.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin: 12px 0 25px; }
+		.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+		.tab { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 9px 16px; color: var(--muted); font-size: 12px; transition: .2s; }
+		.tab:hover, .tab.active { background: var(--ink); color: white; border-color: var(--ink); }
+		.actions { display: flex; align-items: center; gap: 12px; }
+		.search { width: 210px; border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 10px 16px; outline: none; font-size: 13px; }
+		.search:focus { border-color: var(--ink); }
+		.upload-button { border: 0; background: var(--orange); color: white; border-radius: 999px; padding: 11px 18px; font-weight: 700; font-size: 13px; box-shadow: 0 7px 0 rgba(146, 54, 27, .16); transition: transform .2s, box-shadow .2s; }
+		.upload-button:hover { transform: translateY(-2px); box-shadow: 0 9px 0 rgba(146, 54, 27, .16); }
+		.upload-button:active { transform: translateY(2px); box-shadow: 0 3px 0 rgba(146, 54, 27, .16); }
+		.dropzone { display: none; border: 1px dashed #a8ada5; border-radius: 18px; padding: 34px; text-align: center; margin: 0 0 28px; background: rgba(255,254,250,.6); }
+		.dropzone.open { display: block; animation: reveal .3s ease both; }
+		.dropzone.drag { background: var(--lime); border-color: var(--ink); }
+		.dropzone h2 { margin: 0 0 7px; font-size: 21px; letter-spacing: -.05em; }
+		.dropzone p { margin: 0; color: var(--muted); font-size: 13px; }
+		.drop-icon { font-size: 27px; margin-bottom: 5px; }
+		.gallery { columns: 4 235px; column-gap: 18px; min-height: 200px; }
+		.photo { break-inside: avoid; margin: 0 0 18px; position: relative; overflow: hidden; border-radius: 12px; background: #e8e7de; box-shadow: var(--shadow); animation: reveal .45s ease both; }
+		.photo img { display: block; width: 100%; height: auto; min-height: 150px; object-fit: cover; transition: transform .45s ease; }
+		.photo:hover img { transform: scale(1.04); }
+		.photo-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 40px 15px 13px; color: white; background: linear-gradient(transparent, rgba(19, 22, 19, .76)); opacity: 0; transition: .25s; }
+		.photo:hover .photo-info { opacity: 1; }
+		.photo-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.photo-meta { font: 10px "DM Mono", monospace; opacity: .75; margin-top: 5px; }
+		.delete { position: absolute; right: 10px; top: 10px; border: 0; background: rgba(255,255,255,.9); color: var(--ink); border-radius: 50%; width: 30px; height: 30px; opacity: 0; transition: .2s; }
+		.photo:hover .delete { opacity: 1; }
+		.empty { border: 1px dashed var(--line); border-radius: 14px; padding: 75px 20px; text-align: center; color: var(--muted); }
+		.empty strong { display: block; color: var(--ink); margin-bottom: 8px; }
+		.status { min-height: 25px; padding: 20px 0 38px; color: var(--muted); font: 11px "DM Mono", monospace; display: flex; justify-content: space-between; }
+		.music-dock { position: fixed; z-index: 4; left: max(18px, env(safe-area-inset-left)); right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: auto minmax(180px, 1fr) minmax(180px, 1.5fr) minmax(150px, .8fr); align-items: center; gap: 18px; padding: 13px 17px; color: white; background: #242824; border: 1px solid #4d554c; border-radius: 15px; box-shadow: 0 14px 40px rgba(20,24,20,.22); }
+		.music-label { color: var(--lime); font: 10px "DM Mono", monospace; letter-spacing: .08em; }
+		.music-dock audio { width: 100%; height: 30px; }
+		.music-select { min-width: 0; border: 1px solid #596257; border-radius: 8px; padding: 8px 10px; color: white; background: #303730; }
+		.lyrics { max-height: 56px; overflow-y: auto; color: #d4d9d1; font-size: 12px; line-height: 1.5; }
+		.lyrics strong { display: block; color: white; font-size: 13px; margin-bottom: 4px; }
+		.lyrics span { display: block; opacity: .7; white-space: pre-line; }
+		.detail-view { display: none; position: fixed; inset: 0; z-index: 6; overflow-y: auto; background: var(--paper); }
+		.detail-view.open { display: block; }
+		.detail-head { width: min(1120px, calc(100% - 48px)); margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 24px 0; border-bottom: 1px solid var(--line); }
+		.detail-back { border: 0; padding: 0; color: var(--ink); background: transparent; font-size: 13px; font-weight: 700; }
+		.detail-label { color: var(--muted); font: 10px "DM Mono", monospace; letter-spacing: .1em; }
+		.detail-content { width: min(920px, calc(100% - 48px)); margin: 0 auto; padding: 54px 0 110px; }
+		.detail-image-wrap { display: grid; place-items: center; min-height: 300px; padding: 18px; border-radius: 16px; background: #e9e8e1; }
+		.detail-image { display: block; max-width: 100%; max-height: 62vh; object-fit: contain; border-radius: 8px; box-shadow: 0 20px 55px rgba(40, 45, 35, .14); }
+		.diary { width: min(680px, 100%); margin: 42px auto 0; }
+		.detail-meta { color: var(--muted); font: 10px "DM Mono", monospace; letter-spacing: .08em; }
+		.diary h2 { margin: 14px 0 22px; font-size: clamp(27px, 4vw, 46px); line-height: 1.1; letter-spacing: -.07em; }
+		.detail-story { color: #59625b; font-size: 16px; line-height: 2; white-space: pre-line; }
+		.detail-empty { color: var(--muted); font-size: 14px; }
+		body.detail-open { overflow: hidden; }
+		body.detail-open .music-dock { display: none; }
+		.close { position: fixed; top: 22px; right: 25px; background: white; border: 0; border-radius: 50%; width: 38px; height: 38px; font-size: 22px; }
+		@keyframes reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+		@media (max-width: 720px) { .shell { width: min(100% - 28px, 1420px); } header { padding-top: 18px; } .header-note { display: none; } .hero { display: block; padding: 55px 0 35px; } h1 { font-size: clamp(52px, 16vw, 68px); } .hero-copy { margin: 28px 0 0; } .toolbar { align-items: stretch; flex-direction: column; } .search { width: 100%; } .gallery { columns: 2 145px; column-gap: 11px; } .photo { margin-bottom: 11px; } .photo-info { opacity: 1; padding: 42px 11px 10px; } .photo-name { font-size: 11px; } .status { padding-bottom: 115px; } .music-dock { left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); grid-template-columns: 88px 1fr; gap: 6px 9px; padding: 8px 10px; } .music-label { align-self: center; font-size: 9px; } .music-select { min-height: 32px; padding: 5px 7px; font-size: 12px; } .music-dock audio { grid-column: 1 / -1; height: 25px; } .lyrics { grid-column: 1 / -1; max-height: 24px; font-size: 10px; line-height: 1.2; } .lyrics strong { display: inline; margin-right: 7px; font-size: 11px; } .lyrics span { display: inline; white-space: nowrap; } .detail-head { width: min(100% - 28px, 920px); padding: 18px 0; } .detail-content { width: min(100% - 28px, 920px); padding: 24px 0 70px; } .detail-image-wrap { min-height: 220px; padding: 10px; } .detail-image { max-height: 52vh; } .diary { margin-top: 28px; } .detail-story { font-size: 14px; line-height: 1.9; } }
+	</style>
+</head>
+<body>
+	<div class="shell">
+		<header><div class="brand"><div class="brand-mark"><span>✦</span></div>MEMORY WALL</div><div class="header-note">A PRIVATE COLLECTION · 2026</div></header>
+		<main>
+			<section class="hero"><h1>专属你<br><em>的记忆。</em></h1><div class="hero-copy"><strong>把你留在心里。</strong>照片、只属于你们的备注，还有一首可以反复播放的歌。这里不是展示柜，是你替一段时光保留下来的温柔证据。</div></section>
+			<section class="toolbar"><div class="tabs" id="tabs"><button class="tab active" data-category="全部">全部 <span id="allCount">0</span></button><button class="tab" data-category="旅行">旅行</button><button class="tab" data-category="日常">日常</button><button class="tab" data-category="灵感">灵感</button></div><div class="actions"><select class="search" id="sortSelect" aria-label="排序方式" style="width:150px;"><option value="time-desc">时间：从近到远</option><option value="time-asc">时间：从远到近</option><option value="default">默认顺序</option></select><input class="search" id="search" placeholder="搜索照片或备注..." type="search"></div></section>
+			<section class="gallery" id="gallery"><div class="empty"><strong>这里还没有回忆</strong>这面墙正在等第一张照片。</div></section>
+			<div class="status"><span id="statusText">正在连接照片数据库...</span><span>LOCAL ARCHIVE / <span id="totalCount">0</span> ITEMS</span></div>
+		</main>
+	</div>
+	<div class="music-dock"><div class="music-label">NOW PLAYING</div><select class="music-select" id="musicSelect" aria-label="选择背景音乐"><option value="">还没有背景音乐</option></select><audio id="audioPlayer" controls></audio><div class="lyrics" id="lyrics"><strong>还没有背景音乐</strong><span>管理员可以在后台添加歌曲和歌词</span></div></div>
+	<section class="detail-view" id="detailView"><div class="detail-head"><button class="detail-back" id="closeDetail">← 返回</button><span class="detail-label">MEMORY / DIARY</span></div><div class="detail-content"><div class="detail-image-wrap"><img class="detail-image" id="detailImage" alt="照片"></div><article class="diary"><div class="detail-meta" id="detailMeta"></div><h2 id="detailTitle"></h2><div class="detail-story" id="detailStory"></div></article></div></section>
+	<script>
+		const gallery = document.querySelector('#gallery');
+		const statusText = document.querySelector('#statusText');
+		let photos = [];
+		let activeCategory = '全部';
+		let sortMode = 'time-desc';
+		let tracks = [];
+		let selectedTrack = null;
+
+		async function loadPhotos() {
+			try {
+				const response = await fetch('/api/photos');
+				if (!response.ok) throw new Error('服务不可用');
+				photos = await response.json();
+				renderPhotos();
+				statusText.textContent = '照片数据库已连接 · 自动保存';
+			} catch (error) { statusText.textContent = '无法连接数据库，请确认后端服务已启动'; }
+		}
+
+		function getPhotoSortTime(photo) {
+			const raw = photo.taken_at || photo.created_at;
+			const value = new Date(raw).getTime();
+			return Number.isNaN(value) ? 0 : value;
+		}
+
+		function renderPhotos() {
+			const keyword = document.querySelector('#search').value.trim().toLowerCase();
+			const visible = photos.filter(photo => (activeCategory === '全部' || photo.category === activeCategory) && `${photo.original_name} ${photo.note} ${photo.story}`.toLowerCase().includes(keyword));
+			if (sortMode === 'time-desc') visible.sort((a, b) => getPhotoSortTime(b) - getPhotoSortTime(a));
+			if (sortMode === 'time-asc') visible.sort((a, b) => getPhotoSortTime(a) - getPhotoSortTime(b));
+			document.querySelector('#allCount').textContent = photos.length;
+			document.querySelector('#totalCount').textContent = photos.length;
+			if (!visible.length) { gallery.innerHTML = '<div class="empty"><strong>还没有匹配的照片</strong>换个关键词或导入一些新记忆。</div>'; return; }
+			gallery.innerHTML = visible.map((photo, index) => `<article class="photo" style="animation-delay:${Math.min(index * .04, .4)}s"><img src="${photo.url}" alt="${escapeHtml(photo.note || photo.original_name)}" data-note="${escapeHtml(photo.note || photo.original_name)}" data-story="${escapeHtml(photo.story || '')}" loading="lazy"><div class="photo-info"><div class="photo-name">${escapeHtml(photo.note || photo.original_name)}</div><div class="photo-meta">${photo.story ? '点击阅读故事 · ' : ''}${photo.category} · ${formatDateTime(photo.taken_at || photo.created_at)}</div></div></article>`).join('');
+			gallery.querySelectorAll('.photo').forEach((card, index) => card.addEventListener('click', () => openDetail(visible[index])));
+		}
+
+		function openDetail(photo) {
+			document.querySelector('#detailImage').src = photo.url;
+			document.querySelector('#detailImage').alt = photo.note || photo.original_name;
+			document.querySelector('#detailMeta').textContent = `${photo.category} · 拍摄于 ${formatDateTime(photo.taken_at || photo.created_at)}`;
+			document.querySelector('#detailTitle').textContent = photo.note || photo.original_name;
+			document.querySelector('#detailStory').innerHTML = photo.story ? escapeHtml(photo.story) : '<span class="detail-empty">这张照片还没有写下故事。</span>';
+			document.querySelector('#detailView').classList.add('open');
+			document.body.classList.add('detail-open');
+			document.querySelector('#detailView').scrollTop = 0;
+		}
+
+		function updateLyrics() {
+			if (!selectedTrack) return;
+			const timed = selectedTrack.timed_lyrics || [];
+			if (!timed.length) { document.querySelector('#lyrics').innerHTML = `<strong>${escapeHtml(selectedTrack.title)}</strong><span>${escapeHtml(selectedTrack.lyrics || '这首歌还没有歌词')}</span>`; return; }
+			let current = timed[0];
+			for (const line of timed) { if (line.time <= document.querySelector('#audioPlayer').currentTime) current = line; else break; }
+			document.querySelector('#lyrics').innerHTML = `<strong>${escapeHtml(selectedTrack.title)}</strong><span>${escapeHtml(current.text || '♪')}</span>`;
+		}
+
+		function selectTrack(id, autoplay = false) {
+			selectedTrack = tracks.find(track => String(track.id) === String(id));
+			if (!selectedTrack) return;
+			const player = document.querySelector('#audioPlayer');
+			player.src = selectedTrack.url;
+			updateLyrics();
+			if (autoplay) player.play().catch(() => {});
+		}
+
+		async function loadMusic() {
+			try {
+				const response = await fetch('/api/music');
+				tracks = await response.json();
+				document.querySelector('#musicSelect').innerHTML = tracks.length ? tracks.map(track => `<option value="${track.id}">${escapeHtml(track.title)}${track.lyrics_source === 'lrc' ? ' · LRC' : ''}</option>`).join('') : '<option value="">还没有背景音乐</option>';
+				if (tracks.length) { selectTrack(tracks[0].id); }
+			} catch (error) { /* The photo wall remains usable without music. */ }
+		}
+
+		function formatDateTime(value) {
+			if (!value) return '时间待补充';
+			const date = new Date(value);
+			if (Number.isNaN(date.getTime())) return '时间待补充';
+			return date.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+		}
+		function escapeHtml(value) { return value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]); }
+
+		document.querySelector('#search').addEventListener('input', renderPhotos);
+		document.querySelector('#sortSelect').addEventListener('change', event => { sortMode = event.target.value; renderPhotos(); });
+		document.querySelector('#musicSelect').addEventListener('change', event => selectTrack(event.target.value, true));
+		document.querySelector('#audioPlayer').addEventListener('timeupdate', updateLyrics);
+		document.querySelector('#tabs').addEventListener('click', event => { if (!event.target.matches('.tab')) return; document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active')); event.target.classList.add('active'); activeCategory = event.target.dataset.category; renderPhotos(); });
+		document.querySelector('#closeDetail').addEventListener('click', () => { document.querySelector('#detailView').classList.remove('open'); document.body.classList.remove('detail-open'); });
+		loadPhotos();
+		loadMusic();
+	</script>
+</body>
+</html>

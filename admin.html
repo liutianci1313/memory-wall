@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>回忆墙管理后台</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+    :root { --ink: #202421; --muted: #7b827d; --line: #dedfd8; --paper: #f5f4ef; --card: #fffefa; --lime: #d4f35b; --orange: #ff7c55; --shadow: 0 18px 45px rgba(40, 45, 35, .08); }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--paper); font-family: Manrope, "Microsoft YaHei", sans-serif; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1120px, calc(100% - 36px)); margin: auto; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 25px 0; border-bottom: 1px solid var(--line); }
+    .brand { font-weight: 800; letter-spacing: -.05em; font-size: 19px; }
+    .back { color: var(--muted); text-decoration: none; font: 11px "DM Mono", monospace; }
+    .login { min-height: 78vh; display: grid; place-items: center; }
+    .login-card { width: min(400px, 100%); padding: 36px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .eyebrow { color: var(--orange); font: 11px "DM Mono", monospace; letter-spacing: .1em; }
+    h1 { margin: 11px 0 9px; font-size: 38px; letter-spacing: -.08em; line-height: 1; }
+    h2 { margin: 0; font-size: 22px; letter-spacing: -.06em; }
+    .muted { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    input, textarea, select { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px; outline: none; background: #fff; color: var(--ink); }
+    input:focus, textarea:focus, select:focus { border-color: var(--ink); }
+    textarea { min-height: 100px; resize: vertical; }
+    .field { margin-top: 18px; }
+    .primary { border: 0; color: white; background: var(--ink); border-radius: 999px; padding: 11px 19px; font-weight: 700; }
+    .accent { background: var(--orange); }
+    .danger { border: 1px solid #f0b8a6; background: #fff8f5; color: #b8492b; border-radius: 999px; padding: 8px 13px; font-size: 12px; }
+    .bar { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 53px 0 25px; }
+    .bar p { margin: 8px 0 0; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 18px; box-shadow: var(--shadow); }
+    .panel-head { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-bottom: 18px; }
+    .upload-grid { display: grid; grid-template-columns: 1fr 220px; gap: 17px; }
+    .upload-grid .full { grid-column: 1 / -1; }
+    .photo-list { display: grid; gap: 12px; }
+    .photo-row { display: grid; grid-template-columns: 82px 1fr auto; align-items: center; gap: 14px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+    .photo-row img { width: 82px; height: 82px; border-radius: 7px; object-fit: cover; }
+    .photo-row .controls { display: grid; grid-template-columns: 1fr 100px; gap: 8px; }
+    .photo-row .controls textarea { grid-column: 1 / -1; min-height: 72px; }
+    .photo-row small { display: block; color: var(--muted); margin-top: 5px; font: 10px "DM Mono", monospace; }
+    .music-row { display: flex; justify-content: space-between; align-items: center; gap: 15px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .music-row:last-child { border-bottom: 0; }
+    .music-row strong { display: block; font-size: 14px; }
+    .music-row span { color: var(--muted); font-size: 12px; }
+    .lyrics-status { display: inline-block; margin-top: 7px; padding: 4px 8px; border-radius: 999px; color: #52611f !important; background: #edf8bd; font: 10px "DM Mono", monospace; }
+    .lyrics-status.none { color: #8c6b28 !important; background: #fff1c9; }
+    .notice { min-height: 19px; margin-top: 12px; color: var(--muted); font: 11px "DM Mono", monospace; }
+    .hidden { display: none !important; }
+    @media (max-width: 650px) { .shell { width: min(100% - 24px, 1120px); } .bar { display: block; padding-top: 35px; } .bar .back { display: block; margin-top: 18px; } .upload-grid { display: block; } .upload-grid > * { margin-top: 15px; } .photo-row { grid-template-columns: 58px 1fr; } .photo-row img { width: 58px; height: 58px; } .photo-row .controls { grid-column: 1 / -1; } .photo-row .danger { grid-column: 2; justify-self: end; margin-top: -58px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><div class="brand">✦ 回忆墙 / ADMIN</div><a class="back" href="/">← 返回公开页面</a></header>
+    <section class="login" id="loginView"><form class="login-card" id="loginForm"><div class="eyebrow">PRIVATE CONTROL ROOM</div><h1>管理你的回忆。</h1><p class="muted">这里可以添加照片、给照片写备注，也可以上传一首属于这面墙的歌。</p><div class="field"><label for="password">管理员密码</label><input id="password" type="password" autocomplete="current-password" required></div><button class="primary accent" style="margin-top:18px;width:100%">进入管理后台</button><div class="notice" id="loginNotice"></div></form></section>
+    <main id="adminView" class="hidden">
+      <section class="bar"><div><div class="eyebrow">MEMORY WALL / EDIT</div><h1>整理你的收藏。</h1><p class="muted">公开页只展示内容，所有修改都从这里完成。</p></div><button class="primary" id="logout">退出登录</button></section>
+      <section class="panel"><div class="panel-head"><div><h2>添加照片</h2><div class="muted">可以一次选择多张；同一批照片会使用同一条备注、故事和拍摄时间。</div></div></div><form id="photoForm"><div class="upload-grid"><div><label for="photoFiles">照片文件</label><input id="photoFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple required></div><div><label for="photoCategory">分类</label><select id="photoCategory"><option>日常</option><option>旅行</option><option>灵感</option></select></div><div><label for="photoNote">照片备注</label><input id="photoNote" maxlength="500" placeholder="例如：那天的风很轻，你笑得刚刚好。"></div><div><label for="photoTakenAt">拍摄时间</label><input id="photoTakenAt" type="datetime-local"></div><div class="full"><label for="photoStory">照片背后的故事</label><textarea id="photoStory" maxlength="5000" placeholder="写下这张照片为什么值得被记住..."></textarea></div><div class="full"><button class="primary accent">保存照片</button></div></div></form><div class="notice" id="photoNotice"></div></section>
+      <section class="panel"><div class="panel-head"><div><h2>照片、备注与故事</h2><div class="muted">修改后点击保存，公开页点击照片即可阅读故事。</div></div></div><div class="photo-list" id="photoList"></div><div class="notice" id="listNotice"></div></section>
+      <section class="panel"><div class="panel-head"><div><h2>背景音乐与歌词</h2><div class="muted">每次上传的歌曲会和同一组歌词绑定，不会串歌。</div></div></div><form id="musicForm"><div class="upload-grid"><div><label for="audioFile">音频文件</label><input id="audioFile" type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4" required></div><div><label for="musicTitle">歌曲名称</label><input id="musicTitle" placeholder="写给你的歌" maxlength="120"></div><div><label for="lrcFile">LRC 歌词文件（推荐）</label><input id="lrcFile" type="file" accept=".lrc,text/plain"></div><div><label for="lyricsInput">或直接粘贴歌词</label><textarea id="lyricsInput" maxlength="10000" placeholder="没有 LRC 时使用普通歌词"></textarea></div><div class="full"><button class="primary accent">保存这首歌</button></div></div></form><div class="music-list" id="musicList"></div><div class="notice" id="musicNotice"></div></section>
+    </main>
+  </div>
+  <script>
+    const keyName = 'memory-wall-admin-key';
+    let adminKey = sessionStorage.getItem(keyName) || '';
+    const headers = () => ({ 'x-admin-key': adminKey });
+    const escapeHtml = value => String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[character]);
+    const toDateTimeLocalValue = value => {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 16);
+    };
+    const setNotice = (id, text) => { document.querySelector(`#${id}`).textContent = text; };
+
+    async function checkAdmin() {
+      const response = await fetch('/api/admin/check', { headers: headers() });
+      if (!response.ok) throw new Error('密码错误');
+      document.querySelector('#loginView').classList.add('hidden');
+      document.querySelector('#adminView').classList.remove('hidden');
+      loadPhotos(); loadMusic();
+    }
+    document.querySelector('#loginForm').addEventListener('submit', async event => {
+      event.preventDefault(); adminKey = document.querySelector('#password').value; sessionStorage.setItem(keyName, adminKey);
+      try { await checkAdmin(); } catch (error) { sessionStorage.removeItem(keyName); adminKey = ''; setNotice('loginNotice', '密码不正确，请重新输入'); }
+    });
+    document.querySelector('#logout').addEventListener('click', () => { sessionStorage.removeItem(keyName); location.reload(); });
+
+    async function loadPhotos() {
+      const photos = await (await fetch('/api/photos')).json();
+      document.querySelector('#photoList').innerHTML = photos.length ? photos.map(photo => `<div class="photo-row"><img src="${photo.url}" alt=""><div class="controls"><input data-note="${photo.id}" value="${escapeHtml(photo.note)}" placeholder="给这张照片写备注"><input type="datetime-local" data-taken-at="${photo.id}" value="${toDateTimeLocalValue(photo.taken_at)}" placeholder="拍摄时间"><select data-category="${photo.id}"><option ${photo.category === '日常' ? 'selected' : ''}>日常</option><option ${photo.category === '旅行' ? 'selected' : ''}>旅行</option><option ${photo.category === '灵感' ? 'selected' : ''}>灵感</select><textarea data-story="${photo.id}" placeholder="写下这张照片背后的故事...">${escapeHtml(photo.story)}</textarea></div><button class="danger" data-delete-photo="${photo.id}">删除</button></div>`).join('') : '<div class="muted">还没有照片。</div>';
+      document.querySelectorAll('[data-note]').forEach(input => input.addEventListener('change', () => updatePhoto(input.dataset.note)));
+      document.querySelectorAll('[data-category]').forEach(input => input.addEventListener('change', () => updatePhoto(input.dataset.category)));
+      document.querySelectorAll('[data-taken-at]').forEach(input => input.addEventListener('change', () => updatePhoto(input.dataset.takenAt)));
+      document.querySelectorAll('[data-story]').forEach(input => input.addEventListener('change', () => updatePhoto(input.dataset.story)));
+      document.querySelectorAll('[data-delete-photo]').forEach(button => button.addEventListener('click', () => deletePhoto(button.dataset.deletePhoto)));
+    }
+    async function updatePhoto(id) { const response = await fetch(`/api/photos/${id}`, { method: 'PATCH', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify({ note: document.querySelector(`[data-note="${id}"]`).value, story: document.querySelector(`[data-story="${id}"]`).value, taken_at: document.querySelector(`[data-taken-at="${id}"]`)?.value || '', category: document.querySelector(`[data-category="${id}"]`).value }) }); setNotice('listNotice', response.ok ? '已保存修改' : '保存失败'); }
+    async function deletePhoto(id) { if (!confirm('确定删除这张照片吗？')) return; const response = await fetch(`/api/photos/${id}`, { method: 'DELETE', headers: headers() }); if (response.ok) loadPhotos(); }
+    document.querySelector('#photoForm').addEventListener('submit', async event => { event.preventDefault(); const form = new FormData(); [...document.querySelector('#photoFiles').files].forEach(file => form.append('photos', file)); form.append('note', document.querySelector('#photoNote').value); form.append('story', document.querySelector('#photoStory').value); form.append('taken_at', document.querySelector('#photoTakenAt').value); form.append('category', document.querySelector('#photoCategory').value); const response = await fetch('/api/photos', { method: 'POST', headers: headers(), body: form }); setNotice('photoNotice', response.ok ? '照片和故事已保存' : '保存失败，请检查格式'); if (response.ok) { event.target.reset(); loadPhotos(); } });
+
+    async function loadMusic() { const tracks = await (await fetch('/api/music')).json(); document.querySelector('#musicList').innerHTML = tracks.map(track => `<div class="music-row"><div><strong>${escapeHtml(track.title)}</strong><span>${track.lyrics.split('\n').filter(Boolean)[0] || '暂无歌词'}</span><span class="lyrics-status ${track.lyrics_source === 'none' ? 'none' : ''}">${track.lyrics_source === 'lrc' ? 'LRC 已导入 · 可同步' : track.lyrics_source === 'manual' ? '普通歌词已导入' : '未导入歌词'}</span></div><button class="danger" data-delete-music="${track.id}">删除</button></div>`).join('') || '<div class="muted">还没有背景音乐。</div>'; document.querySelectorAll('[data-delete-music]').forEach(button => button.addEventListener('click', () => deleteMusic(button.dataset.deleteMusic))); }
+    async function deleteMusic(id) { if (!confirm('确定删除这首歌吗？')) return; const response = await fetch(`/api/music/${id}`, { method: 'DELETE', headers: headers() }); if (response.ok) loadMusic(); }
+    document.querySelector('#musicForm').addEventListener('submit', async event => { event.preventDefault(); const form = new FormData(); form.append('audio', document.querySelector('#audioFile').files[0]); form.append('title', document.querySelector('#musicTitle').value); form.append('lyrics', document.querySelector('#lyricsInput').value); const lrc = document.querySelector('#lrcFile').files[0]; if (lrc) form.append('lrc', lrc); const response = await fetch('/api/music', { method: 'POST', headers: headers(), body: form }); setNotice('musicNotice', response.ok ? (lrc ? '歌曲和对应 LRC 歌词已保存' : '歌曲已保存') : '保存失败，请检查音频或 LRC 格式'); if (response.ok) { event.target.reset(); loadMusic(); } });
+    if (adminKey) checkAdmin().catch(() => { sessionStorage.removeItem(keyName); adminKey = ''; });
+  </script>
+</body>
+</html>
