@@ -49,7 +49,11 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { files: 20, fileSize: 15 * 1024 * 1024 },
-  fileFilter: (_request, file, callback) => callback(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype))
+  fileFilter: (_request, file, callback) => {
+    const imageType = /^image\/(jpeg|jpg|png|webp|gif|avif|heic|heif)$/.test(file.mimetype);
+    if (imageType) return callback(null, true);
+    callback(new Error('仅支持 JPG、PNG、WEBP、GIF、AVIF 或 HEIC 图片'));
+  }
 });
 const audioStorage = multer.diskStorage({
   destination: uploadDirectory,
@@ -87,6 +91,7 @@ function requireAdmin(request, response, next) {
 }
 
 app.post('/api/photos', requireAdmin, upload.array('photos', 20), (request, response) => {
+  if (!request.files?.length) return response.status(400).json({ error: '请选择至少一张图片' });
   const category = ['旅行', '日常', '灵感'].includes(request.body.category) ? request.body.category : '日常';
   const note = String(request.body.note || '').trim().slice(0, 500);
   const story = String(request.body.story || '').trim().slice(0, 5000);
