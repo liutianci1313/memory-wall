@@ -48,9 +48,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({
   storage,
-  limits: { files: 20, fileSize: 15 * 1024 * 1024 },
+  limits: { files: 20, fileSize: 50 * 1024 * 1024 },
   fileFilter: (_request, file, callback) => {
-    const imageType = /^image\/(jpeg|jpg|png|webp|gif|avif|heic|heif)$/.test(file.mimetype);
+    const imageExtension = /\.(jpe?g|png|webp|gif|avif|heic|heif)$/i.test(file.originalname);
+    const imageType = /^image\/(jpeg|jpg|png|webp|gif|avif|heic|heif)$/.test(file.mimetype) || imageExtension;
     if (imageType) return callback(null, true);
     callback(new Error('仅支持 JPG、PNG、WEBP、GIF、AVIF 或 HEIC 图片'));
   }
@@ -148,7 +149,11 @@ app.delete('/api/music/:id', requireAdmin, (request, response) => {
   response.sendStatus(204);
 });
 
-app.use((error, _request, response, _next) => response.status(400).json({ error: error.message || '请求失败' }));
+app.use((error, _request, response, _next) => {
+  if (error.code === 'LIMIT_FILE_SIZE') return response.status(413).json({ error: '图片太大，单张图片不能超过 50MB' });
+  if (error.code === 'LIMIT_FILE_COUNT') return response.status(400).json({ error: '一次最多上传 20 张图片' });
+  response.status(400).json({ error: error.message || '请求失败' });
+});
 app.listen(port, () => console.log(`Photo wall is running at http://localhost:${port}`));
 
 function parseLrc(content) {
